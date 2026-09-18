@@ -362,7 +362,7 @@
 
     <script>
         // Stavová proměnná pro formát času (výchozí je 24h)
-        let is24HourFormat = true;
+        var is24HourFormat = true;
 
         // Funkce pro přepnutí formátu
         function toggleTimeFormat() {
@@ -371,12 +371,12 @@
         }
 
         function updateClock() {
-            const now = new Date();
-            let hours = now.getHours();
-            let minutes = now.getMinutes();
-            
-            const badgeElement = document.getElementById('format-badge');
-            const ampmTextElement = document.getElementById('ampm-text');
+            var now = new Date();
+            var hours = now.getHours();
+            var minutes = now.getMinutes();
+
+            var badgeElement = document.getElementById('format-badge');
+            var ampmTextElement = document.getElementById('ampm-text');
             
             // Přidání nuly na začátek minut
             minutes = minutes < 10 ? '0' + minutes : minutes;
@@ -392,7 +392,7 @@
                 badgeElement.textContent = '12h';
                 ampmTextElement.style.display = 'block';
                 
-                const ampm = hours >= 12 ? 'PM' : 'AM';
+                var ampm = hours >= 12 ? 'PM' : 'AM';
                 ampmTextElement.textContent = ampm;
                 
                 hours = hours % 12;
