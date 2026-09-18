@@ -407,6 +407,11 @@
         updateClock();
         // Aktualizovat každou minutu
         setInterval(updateClock, 1000);
+
+        // Automatický reload stránky každých 10 minut
+        setInterval(function () {
+            location.reload();
+        }, 10 * 60 * 1000);
     </script>
 </body>
 </html>
