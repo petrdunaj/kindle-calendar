@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kindle E-ink Kalendář</title>
+    <style>
+        /* CSS Proměnné pro striktní paletu šedi (16 odstínů) */
+        :root {
+            --gray-0: #ffffff;
+            --gray-1: #f4f4f4;
+            --gray-2: #e8e8e8;
+            --gray-3: #dddddd;
+            --gray-4: #cccccc;
+            --gray-5: #bbbbbb;
+            --gray-6: #aaaaaa;
+            --gray-7: #999999;
+            --gray-8: #888888;
+            --gray-9: #777777;
+            --gray-10: #666666;
+            --gray-11: #555555;
+            --gray-12: #444444;
+            --gray-13: #333333;
+            --gray-14: #222222;
+            --gray-15: #000000;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: var(--gray-0);
+            color: var(--gray-15);
+            /* Ideální šířka a orientace pro Kindle (600x800) */
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 15px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* --- HORNÍ SEKCE --- */
+        .top-section {
+            display: flex;
+            width: 100%;
+            height: 25%;
+            min-height: 200px;
+            gap: 15px;
+        }
+
+        /* Levý panel: Hodiny (2/3) */
+        .clock-panel {
+            flex: 2;
+            background-color: var(--gray-15);
+            color: var(--gray-0);
+            border-radius: 6px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .clock-date {
+            color: var(--gray-4);
+            font-size: 16px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .clock-time-wrapper {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+        }
+
+        .clock-time {
+            font-size: 7em;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .clock-am-pm {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
+        }
+        
+        .clock-24h-badge {
+            background-color: var(--gray-10);
+            color: var(--gray-2);
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .clock-ampm-text {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        /* Pravý panel: Měsíční kalendář (1/3) */
+        .calendar-panel {
+            flex: 1;
+            background-color: var(--gray-1);
+            border: 2px solid var(--gray-4);
+            border-radius: 6px;
+            padding: 10px 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            font-size: 13px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .calendar-header span.arrow {
+            color: var(--gray-7);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            text-align: center;
+            gap: 4px 0;
+            font-size: 12px;
+        }
+
+        .calendar-grid .day-name {
+            font-weight: bold;
+            color: var(--gray-11);
+            margin-bottom: 5px;
+        }
+
+        .calendar-grid .day {
+            padding: 3px 0;
+            color: var(--gray-15);
+        }
+        
+        .calendar-grid .day.empty {
+            color: transparent;
+        }
+
+        .calendar-grid .day.active {
+            background-color: var(--gray-15);
+            color: var(--gray-0);
+            font-weight: bold;
+            border-radius: 3px;
+        }
+
+        /* --- SPODNÍ SEKCE: Události --- */
+        .bottom-section {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            flex: 1;
+        }
+
+        .day-block {
+            display: flex;
+            flex-direction: column;
+            border: 2px solid var(--gray-4);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .day-header {
+            background-color: var(--gray-10);
+            color: var(--gray-0);
+            font-weight: bold;
+            padding: 8px 15px;
+            font-size: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .event-list {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .event-item {
+            display: flex;
+            background-color: var(--gray-2);
+            border-top: 2px solid var(--gray-0);
+        }
+
+        .event-item:nth-child(even) {
+            background-color: var(--gray-3);
+        }
+
+        .event-indicator {
+            width: 45px;
+            padding: 10px 5px;
+            background-color: var(--gray-6);
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .event-content {
+            padding: 10px 15px;
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="top-section">
+        <!-- Hodiny (2/3) -->
+        <div class="clock-panel">
+            <div class="clock-date" id="main-date">Pátek, 18. Září 2026</div>
+            <div class="clock-time-wrapper">
+                <div class="clock-time" id="main-time">20:30</div>
+                <div class="clock-am-pm">
+                    <div class="clock-24h-badge">24h</div>
+                    <div class="clock-ampm-text">AM</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mini Kalendář (1/3) -->
+        <div class="calendar-panel">
+            <div class="calendar-header">
+                <span class="arrow">&lt;</span>
+                <span>Září 2026</span>
+                <span class="arrow">&gt;</span>
+            </div>
+            <div class="calendar-grid">
+                <!-- Názvy dnů -->
+                <div class="day-name">Po</div>
+                <div class="day-name">Út</div>
+                <div class="day-name">St</div>
+                <div class="day-name">Čt</div>
+                <div class="day-name">Pá</div>
+                <div class="day-name">So</div>
+                <div class="day-name">Ne</div>
+                
+                <!-- Dny (Ukázková mřížka odpovídající návrhu) -->
+                <div class="day empty"></div>
+                <div class="day">1</div>
+                <div class="day">2</div>
+                <div class="day">3</div>
+                <div class="day">4</div>
+                <div class="day">5</div>
+                <div class="day">6</div>
+                
+                <div class="day">7</div>
+                <div class="day">8</div>
+                <div class="day">9</div>
+                <div class="day">10</div>
+                <div class="day">11</div>
+                <div class="day">12</div>
+                <div class="day">13</div>
+                
+                <div class="day">14</div>
+                <div class="day">15</div>
+                <div class="day">16</div>
+                <div class="day">17</div>
+                <div class="day active">18</div>
+                <div class="day">19</div>
+                <div class="day">20</div>
+                
+                <div class="day">21</div>
+                <div class="day">22</div>
+                <div class="day">23</div>
+                <div class="day">24</div>
+                <div class="day">25</div>
+                <div class="day">26</div>
+                <div class="day">27</div>
+                
+                <div class="day">28</div>
+                <div class="day">29</div>
+                <div class="day">30</div>
+                <div class="day">1</div>
+                <div class="day">2</div>
+                <div class="day">3</div>
+                <div class="day">4</div>
+
+                <div class="day">5</div>
+                <div class="day">6</div>
+                <div class="day">7</div>
+                <div class="day">8</div>
+                <div class="day">9</div>
+                <div class="day">10</div>
+                <div class="day">11</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-section" id="events-container">
+        
+        <!-- Den 1 -->
+        <div class="day-block">
+            <div class="day-header">Pátek, 18. září</div>
+            <div class="event-list">
+                <div class="event-item">
+                    <div class="event-indicator">wh</div>
+                    <div class="event-content">09:00 - 10:00: Týmová schůzka (Zasedačka)</div>
+                </div>
+                <div class="event-item">
+                    <div class="event-indicator">vbc</div>
+                    <div class="event-content">13:30 - 14:30: Prezentace projektu</div>
+                </div>
+                <div class="event-item">
+                    <div class="event-indicator">Z</div>
+                    <div class="event-content">17:00: Cvičení jógy</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Den 2 -->
+        <div class="day-block">
+            <div class="day-header">Sobota, 19. září</div>
+            <div class="event-list">
+                <div class="event-item">
+                    <div class="event-indicator">ZW</div>
+                    <div class="event-content">11:00 - 12:30: Konference online</div>
+                </div>
+                <div class="event-item">
+                    <div class="event-indicator">P</div>
+                    <div class="event-content">16:00: Vyzvednutí dětí</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Den 3 -->
+        <div class="day-block">
+            <div class="day-header">Neděle, 20. září</div>
+            <div class="event-list">
+                <div class="event-item">
+                    <div class="event-indicator">PW</div>
+                    <div class="event-content">10:00: Meeting</div>
+                </div>
+                <div class="event-item">
+                    <div class="event-indicator">Z</div>
+                    <div class="event-content">14:00 - 15:00: Workshop (Ateliér)</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Jednoduchý script pro aktualizaci hodin (i když data kalendáře jsou zatím statická)
+        function updateClock() {
+            const now = new Date();
+            let hours = now.getHours();
+            let minutes = now.getMinutes();
+            
+            // Určení AM/PM
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            
+            // Převod na 12hodinový formát pro vizuální shodu s návrhem
+            // (V návrhu je "10:30 AM" ale i štítek "24h", zachováme formát z obrázku)
+            hours = hours % 12;
+            hours = hours ? hours : 12; // '0' hodin by mělo být '12'
+            
+            // Přidání nuly na začátek hodin a minut
+            hours = hours < 10 ? '0' + hours : hours;
+            minutes = minutes < 10 ? '0' + minutes : minutes;
+            
+            document.getElementById('main-time').textContent = hours + ':' + minutes;
+            document.querySelector('.clock-ampm-text').textContent = ampm;
+        }
+
+        // Spustit hodiny při načtení
+        updateClock();
+        // Aktualizovat každou minutu
+        setInterval(updateClock, 1000);
+    </script>
+</body>
+</html>
