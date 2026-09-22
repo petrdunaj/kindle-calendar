@@ -360,10 +360,37 @@
             updateClock();
         }
 
+        // Starý prohlížeč na Kindlu neaplikuje časové pásmo zařízení na
+        // Date.getHours()/getMinutes() (vrací čas jako UTC). Proto čas
+        // dopočítáváme z UTC hodnot + ruční offset pro Prahu (CET/CEST).
+        function getPragueOffsetHours(utcDate) {
+            var year = utcDate.getUTCFullYear();
+
+            function lastSundayUtc(y, month) {
+                // Poslední den daného měsíce, pak dolů na nejbližší neděli
+                var d = new Date(Date.UTC(y, month + 1, 0));
+                d.setUTCDate(d.getUTCDate() - d.getUTCDay());
+                d.setUTCHours(1, 0, 0, 0);
+                return d;
+            }
+
+            var dstStart = lastSundayUtc(year, 2);  // poslední neděle v březnu
+            var dstEnd = lastSundayUtc(year, 9);    // poslední neděle v říjnu
+
+            if (utcDate.getTime() >= dstStart.getTime() && utcDate.getTime() < dstEnd.getTime()) {
+                return 2; // CEST (letní čas)
+            }
+            return 1; // CET (standardní čas)
+        }
+
         function updateClock() {
             var now = new Date();
-            var hours = now.getHours();
-            var minutes = now.getMinutes();
+            var offsetHours = getPragueOffsetHours(now);
+            var totalMinutes = now.getUTCHours() * 60 + now.getUTCMinutes() + offsetHours * 60;
+            totalMinutes = ((totalMinutes % 1440) + 1440) % 1440;
+
+            var hours = Math.floor(totalMinutes / 60);
+            var minutes = totalMinutes % 60;
 
             var badgeElement = document.getElementById('format-badge');
             var ampmTextElement = document.getElementById('ampm-text');
