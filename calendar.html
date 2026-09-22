@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="60">
     <title>Kindle E-ink Kalendář</title>
     <style>
         /* Poznámka: staré WebKit v Kindle prohlížeči nepodporuje CSS proměnné,
@@ -103,7 +104,7 @@
         /* Pravý panel: Měsíční kalendář (1/3) */
         .calendar-panel {
             float: left;
-            width: 183px;
+            width: 185px;
             height: 210px;
             background-color: #f4f4f4;
             border: 2px solid #cccccc;
@@ -147,6 +148,13 @@
             width: 14.28%;
         }
 
+        /* Vynucení zlomu řádku po každém 7. prvku - zaokrouhlování šířky
+           14.28% by jinak mohlo nechat float "vklouznout" do mezery na
+           konci předchozího řádku místo na začátek nového. */
+        .calendar-grid > :nth-child(7n+1) {
+            clear: left;
+        }
+
         .calendar-grid .day-name {
             font-weight: bold;
             color: #555555;
@@ -154,7 +162,8 @@
         }
 
         .calendar-grid .day {
-            padding: 3px 0;
+            padding: 2px 0;
+            margin: 2px 0;
             color: #000000;
         }
 
