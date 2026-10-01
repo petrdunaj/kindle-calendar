@@ -1,0 +1,5 @@
+config.js
+worker/node_modules/
+worker/.dev.vars
+worker/.wrangler/
+.idea/

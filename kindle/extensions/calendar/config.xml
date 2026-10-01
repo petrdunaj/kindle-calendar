@@ -1,0 +1,11 @@
+<extension>
+    <information>
+        <name>Calendar</name>
+        <version>1.0</version>
+        <author>petr</author>
+        <id>calendar</id>
+    </information>
+    <menus>
+        <menu type="json" dynamic="true">menu.json</menu>
+    </menus>
+</extension>

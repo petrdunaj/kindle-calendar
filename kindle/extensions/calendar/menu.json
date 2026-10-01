@@ -1,0 +1,16 @@
+{
+    "items": [
+        {
+            "name": "Start calendar (stay awake)",
+            "priority": 1,
+            "action": "bin/start.sh",
+            "exitmenu": true
+        },
+        {
+            "name": "Stop calendar (allow sleep)",
+            "priority": 2,
+            "action": "bin/stop.sh",
+            "exitmenu": false
+        }
+    ]
+}

@@ -1,0 +1,14 @@
+name = "kindle-cal"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+# Short labels shown in the dark box left of each event.
+[vars]
+GOOGLE_LABEL = "Z"
+OUTLOOK_LABEL = "wh"
+
+# Secrets (never commit these) - set with:
+#   npx wrangler secret put GOOGLE_ICS_URL
+#   npx wrangler secret put OUTLOOK_ICS_URL
+#   npx wrangler secret put ACCESS_TOKEN
+# For `wrangler dev`, put them in worker/.dev.vars instead.
