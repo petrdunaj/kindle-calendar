@@ -7,6 +7,10 @@ compatibility_date = "2026-09-01"
 GOOGLE_LABEL = "Z"
 OUTLOOK_LABEL = "wh"
 
+# Wiener Linien stops for /departures.js (DIVA numbers, comma separated).
+# 60201425 = St. Marx, 60200763 = St. Marx, Leberstraße
+DEPARTURE_DIVAS = "60201425,60200763"
+
 # Secrets (never commit these) - set with:
 #   npx wrangler secret put GOOGLE_ICS_URL
 #   npx wrangler secret put OUTLOOK_ICS_URL

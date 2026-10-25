@@ -100,8 +100,9 @@
             font-weight: bold;
         }
 
-        /* Pravý panel: Měsíční kalendář (1/3) */
-        .calendar-panel {
+        /* Pravý panel: Odjezdy MHD (1/3). Řádek = table, aby štítek linky
+           a text měly stejnou výšku (flex a grid starý WebKit nezná). */
+        .departures-panel {
             float: left;
             width: 185px;
             height: 210px;
@@ -109,73 +110,61 @@
             border: 2px solid #cccccc;
             -webkit-border-radius: 6px;
             border-radius: 6px;
-            padding: 10px 15px;
+            padding: 10px;
+            overflow: hidden;
         }
 
-        .calendar-header {
+        .departures-header {
             font-weight: bold;
             font-size: 13px;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
+            text-align: center;
             text-transform: uppercase;
         }
 
-        .calendar-header:after {
-            content: "";
+        .dep-row {
             display: table;
-            clear: both;
+            width: 100%;
+            margin-bottom: 6px;
         }
 
-        .calendar-header span {
-            display: block;
-            text-align: center;
-        }
-
-        .calendar-grid {
-            text-align: center;
-            font-size: 12px;
-        }
-
-        .calendar-grid:after {
-            content: "";
-            display: table;
-            clear: both;
-        }
-
-        .calendar-grid .day-name,
-        .calendar-grid .day {
-            float: left;
-            width: 14.28%;
-        }
-
-        /* Vynucení zlomu řádku po každém 7. prvku - zaokrouhlování šířky
-           14.28% by jinak mohlo nechat float "vklouznout" do mezery na
-           konci předchozího řádku místo na začátek nového. */
-        .calendar-grid > :nth-child(7n+1) {
-            clear: left;
-        }
-
-        .calendar-grid .day-name {
-            font-weight: bold;
-            color: #555555;
-            margin-bottom: 5px;
-        }
-
-        .calendar-grid .day {
-            padding: 2px 0;
-            margin: 2px 0;
-            color: #000000;
-        }
-
-        .calendar-grid .day.empty {
-            color: transparent;
-        }
-
-        .calendar-grid .day.active {
+        .dep-line {
+            display: table-cell;
+            vertical-align: middle;
+            width: 40px;
+            padding: 4px 0;
             background-color: #000000;
             color: #ffffff;
+            font-size: 14px;
             font-weight: bold;
+            text-align: center;
             -webkit-border-radius: 3px;
             border-radius: 3px;
+        }
+
+        .dep-info {
+            display: table-cell;
+            vertical-align: middle;
+            padding-left: 8px;
+        }
+
+        .dep-towards {
+            font-size: 11px;
+            color: #555555;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .dep-times {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .dep-empty {
+            padding-top: 30px;
+            font-size: 12px;
+            color: #555555;
+            text-align: center;
         }
 
         /* --- SPODNÍ SEKCE: Události --- */
@@ -259,12 +248,10 @@
             </div>
         </div>
 
-        <!-- Mini Kalendář (1/3) -->
-        <div class="calendar-panel">
-            <div class="calendar-header">
-                <span id="calendar-title">&nbsp;</span>
-            </div>
-            <div class="calendar-grid" id="calendar-grid"></div>
+        <!-- Odjezdy MHD (1/3) -->
+        <div class="departures-panel">
+            <div class="departures-header" id="dep-title">Odjezdy (min)</div>
+            <div id="dep-list"><div class="dep-empty">Načítám…</div></div>
         </div>
     </div>
 
@@ -282,20 +269,20 @@
         // ES5 only - starý WebKit v Kindle prohlížeči nezná let/const/arrow/fetch.
 
         var DAY_NAMES = ['Neděle', 'Pondělí', 'Úterý', 'Středa', 'Čtvrtek', 'Pátek', 'Sobota'];
-        var MONTH_NAMES = ['Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen',
-            'Červenec', 'Srpen', 'Září', 'Říjen', 'Listopad', 'Prosinec'];
         var MONTH_GENITIVE = ['ledna', 'února', 'března', 'dubna', 'května', 'června',
             'července', 'srpna', 'září', 'října', 'listopadu', 'prosince'];
 
         var DATA_REFRESH_MS = 10 * 60 * 1000;
         var STALE_AFTER_MS = 30 * 60 * 1000;
+        var DEPARTURES_REFRESH_MS = 60 * 1000;
+        var DEPARTURES_STALE_MS = 3 * 60 * 1000;
         var MAX_TITLE_LENGTH = 40; // delší názvy událostí se zkrátí na "…"
 
         // Stavové proměnné
         var is24HourFormat = true;
         var lastDataOk = 0;      // čas posledního úspěšného načtení událostí
         var lastDataLabel = '';  // "HH:MM" posledního úspěšného načtení
-        var shownDateKey = '';   // pro překreslení mřížky jen při změně dne
+        var shownDateKey = '';   // pro překreslení data jen při změně dne
 
         function toggleTimeFormat() {
             is24HourFormat = !is24HourFormat;
@@ -366,12 +353,11 @@
 
             document.getElementById('main-time').textContent = hours + ':' + minutes;
 
-            // Datum a mřížka se překreslují jen při změně dne
+            // Datum se překresluje jen při změně dne
             var key = p.y + '-' + p.mo + '-' + p.d;
             if (key !== shownDateKey) {
                 shownDateKey = key;
                 renderDate(p);
-                renderMonth(p);
             }
             updateStatus();
         }
@@ -379,37 +365,6 @@
         function renderDate(p) {
             document.getElementById('main-date').textContent =
                 DAY_NAMES[p.wd] + ', ' + p.d + '. ' + MONTH_GENITIVE[p.mo - 1] + ' ' + p.y;
-        }
-
-        // Měsíční mřížka (pondělí první). Buňky jsou přímé potomky
-        // .calendar-grid, aby fungovalo nth-child(7n+1) z CSS.
-        function renderMonth(p) {
-            document.getElementById('calendar-title').textContent = MONTH_NAMES[p.mo - 1] + ' ' + p.y;
-
-            var grid = document.getElementById('calendar-grid');
-            grid.innerHTML = '';
-
-            function cell(cls, text) {
-                var div = document.createElement('div');
-                div.className = cls;
-                div.textContent = text;
-                grid.appendChild(div);
-            }
-
-            var names = ['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'];
-            for (var i = 0; i < 7; i++) {
-                cell('day-name', names[i]);
-            }
-
-            var firstWeekday = (new Date(Date.UTC(p.y, p.mo - 1, 1)).getUTCDay() + 6) % 7;
-            var daysInMonth = new Date(Date.UTC(p.y, p.mo, 0)).getUTCDate();
-
-            for (var e = 0; e < firstWeekday; e++) {
-                cell('day empty', '0'); // průhledná nula drží výšku řádku
-            }
-            for (var d = 1; d <= daysInMonth; d++) {
-                cell(d === p.d ? 'day active' : 'day', '' + d);
-            }
         }
 
         // --- Události ---
@@ -507,31 +462,144 @@
             if (lastDataOk && new Date().getTime() - lastDataOk > STALE_AFTER_MS) {
                 setStatus('OFFLINE - data z ' + lastDataLabel);
             }
+            updateDeparturesStatus();
         }
 
-        var dataScript = null;
+        // --- JSONP načítání (script tag; XHR/CORS na starém Kindle WebKitu nespolehlivé) ---
+
+        var jsonpScripts = {};
+
+        function loadJsonp(key, url, onError) {
+            var old = jsonpScripts[key];
+            if (old && old.parentNode) {
+                old.parentNode.removeChild(old);
+            }
+            var node = document.createElement('script');
+            node.onerror = onError;
+            node.src = url;
+            jsonpScripts[key] = node;
+            document.getElementsByTagName('head')[0].appendChild(node);
+        }
 
         function loadEvents() {
             if (typeof EVENTS_URL === 'undefined' || typeof EVENTS_TOKEN === 'undefined') {
                 setStatus('Chybí config.js (EVENTS_URL, EVENTS_TOKEN)');
                 return;
             }
-            if (dataScript && dataScript.parentNode) {
-                dataScript.parentNode.removeChild(dataScript);
-            }
-            dataScript = document.createElement('script');
-            dataScript.onerror = function () {
+            loadJsonp('events', EVENTS_URL + '?token=' + encodeURIComponent(EVENTS_TOKEN) +
+                '&cb=renderEvents&t=' + new Date().getTime(), function () {
                 if (!lastDataOk) { setStatus('OFFLINE - události se nepodařilo načíst'); }
                 updateStatus();
-            };
-            dataScript.src = EVENTS_URL + '?token=' + encodeURIComponent(EVENTS_TOKEN) +
-                '&cb=renderEvents&t=' + new Date().getTime();
-            document.getElementsByTagName('head')[0].appendChild(dataScript);
+            });
+        }
+
+        // --- Odjezdy MHD ---
+
+        // Výchozí filtr, přepsatelný v config.js (DEPARTURE_FILTER). Jeden záznam = jeden
+        // řádek tabulky. line je povinná; volitelně direction (1/2, stabilní směr podle
+        // Wiener Linien) a towards (část názvu cílové stanice, bez ohledu na velikost písmen).
+        var DEFAULT_DEPARTURE_FILTER = [
+            { line: '18', direction: 1 },
+            { line: '18', direction: 2 },
+            { line: '71', direction: 2 },
+            { line: '74A', towards: 'Stubentor' }
+        ];
+
+        var lastDepOk = 0;
+
+        function departureFilter() {
+            return typeof DEPARTURE_FILTER !== 'undefined' ? DEPARTURE_FILTER : DEFAULT_DEPARTURE_FILTER;
+        }
+
+        // Odjezdy dříve než za N minut se nezobrazí (nestihnu dojít); výchozí 0
+        function departureMinMinutes() {
+            return typeof DEPARTURE_MIN_MINUTES === 'number' ? DEPARTURE_MIN_MINUTES : 0;
+        }
+
+        function departuresUrl() {
+            if (typeof DEPARTURES_URL !== 'undefined') { return DEPARTURES_URL; }
+            return EVENTS_URL.replace(/events\.js$/, 'departures.js');
+        }
+
+        function matchesDeparture(entry, f) {
+            if (String(entry.line).toLowerCase() !== String(f.line).toLowerCase()) { return false; }
+            if (f.direction && Number(f.direction) !== entry.dir) { return false; }
+            if (f.towards && entry.towards.toLowerCase().indexOf(String(f.towards).toLowerCase()) === -1) {
+                return false;
+            }
+            return true;
+        }
+
+        function shortTowards(text) {
+            var t = text.split(',')[0];
+            return t.length > 18 ? t.substring(0, 17) + '…' : t;
+        }
+
+        // Volá se z JSONP odpovědi serveru: renderDepartures({generated, lines})
+        function renderDepartures(data) {
+            var list = document.getElementById('dep-list');
+            var filter = departureFilter();
+            var minMin = departureMinMinutes();
+            list.innerHTML = '';
+
+            for (var i = 0; i < filter.length; i++) {
+                var mins = [];
+                var nextMin = 1e9;
+                var towards = '';
+                for (var j = 0; j < data.lines.length; j++) {
+                    var entry = data.lines[j];
+                    if (!matchesDeparture(entry, filter[i])) { continue; }
+                    for (var k = 0; k < entry.mins.length; k++) {
+                        if (entry.mins[k] < minMin) { continue; }
+                        mins.push(entry.mins[k]);
+                        if (entry.mins[k] < nextMin) {
+                            nextMin = entry.mins[k];
+                            towards = entry.towards; // cíl nejbližšího spoje (71 má zkrácené jízdy)
+                        }
+                    }
+                }
+                mins.sort(function (a, b) { return a - b; });
+
+                var shown = [];
+                for (var m = 0; m < mins.length && m < 3; m++) {
+                    shown.push(mins[m] === 0 ? 'teď' : '' + mins[m]);
+                }
+
+                var row = el('div', 'dep-row');
+                row.appendChild(el('div', 'dep-line', filter[i].line));
+                var info = el('div', 'dep-info');
+                info.appendChild(el('div', 'dep-towards', towards ? shortTowards(towards) : '\u00a0'));
+                info.appendChild(el('div', 'dep-times', shown.length ? shown.join(' · ') : '–'));
+                row.appendChild(info);
+                list.appendChild(row);
+            }
+
+            lastDepOk = new Date().getTime();
+            document.getElementById('dep-title').textContent = 'Odjezdy (min)';
+        }
+
+        function loadDepartures() {
+            if (typeof EVENTS_URL === 'undefined' || typeof EVENTS_TOKEN === 'undefined') { return; }
+            loadJsonp('departures', departuresUrl() + '?token=' + encodeURIComponent(EVENTS_TOKEN) +
+                '&cb=renderDepartures&t=' + new Date().getTime(), function () {
+                if (!lastDepOk) {
+                    document.getElementById('dep-title').textContent = 'Odjezdy - offline';
+                }
+                updateDeparturesStatus();
+            });
+        }
+
+        // Starší než pár minut -> čísla by lhala, tak to řekneme nahlas
+        function updateDeparturesStatus() {
+            if (lastDepOk && new Date().getTime() - lastDepOk > DEPARTURES_STALE_MS) {
+                document.getElementById('dep-title').textContent = 'Odjezdy - offline';
+            }
         }
 
         // Start
         updateClock();
         loadEvents();
+        loadDepartures();
 
         // Hodiny se překreslují jen jednou za minutu (méně překreslení e-inku):
         // krátkým intervalem hlídáme změnu minuty a překreslíme až při ní.
@@ -546,6 +614,9 @@
 
         // Data z kalendářů každých 10 minut, bez blikání celé stránky
         setInterval(loadEvents, DATA_REFRESH_MS);
+
+        // Odjezdy MHD každou minutu (jen malá tabulka, ne celá stránka)
+        setInterval(loadDepartures, DEPARTURES_REFRESH_MS);
 
         // Celá stránka jednou denně kolem 3:00 (úklid paměti prohlížeče).
         // Podmínka na "stáří stránky" brání opakovanému reloadu v okně 3:00-3:59.

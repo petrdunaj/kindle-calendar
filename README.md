@@ -4,6 +4,7 @@ Wall calendar for a Kindle 8 (Touch, FW 5.16.2.1.1) showing Google + Outlook eve
 
 ```
 Google / Outlook  --ICS-->  Cloudflare Worker  --JSONP-->  calendar.html (Kindle browser)
+Wiener Linien real-time API  -->  (same Worker, /departures.js)
 ```
 
 ## 1. Worker (free Cloudflare account)
@@ -25,7 +26,12 @@ Google / Outlook  --ICS-->  Cloudflare Worker  --JSONP-->  calendar.html (Kindle
    Source labels (the box left of each event) are `GOOGLE_LABEL` / `OUTLOOK_LABEL` in `worker/wrangler.toml`.
 3. Check: `curl "https://kindle-cal.<you>.workers.dev/events.js?token=<ACCESS_TOKEN>"`
    (wrong token → 403).
-4. Tests: `cd worker && npm test`
+4. Departures: `curl "https://kindle-cal.<you>.workers.dev/departures.js?token=<ACCESS_TOKEN>"`.
+   Stops are set by `DEPARTURE_DIVAS` in `worker/wrangler.toml` (default: St. Marx and
+   St. Marx/Leberstraße). Data: Wiener Linien open real-time API (no key needed); the
+   Worker caches it for 20 s. Which lines are shown is set in `config.js` (see
+   `config.example.js`), so changing it needs no Worker deploy.
+5. Tests: `cd worker && npm test`
 
 ## 2. Page on the Kindle
 
@@ -33,7 +39,7 @@ Google / Outlook  --ICS-->  Cloudflare Worker  --JSONP-->  calendar.html (Kindle
 2. Copy `calendar.html` and `config.js` to the Kindle root (`/Volumes/Kindle/`), eject.
 3. Wi-Fi on; open `file:///mnt/us/calendar.html` in the experimental browser.
 
-Events refresh every 10 min without a full reload; a full reload happens once a night (~03:00).
+Departures refresh every minute, events every 10 min, without a full reload; a full reload happens once a night (~03:00).
 The footer shows the last update time, or `OFFLINE` after 30 min without data.
 
 ## 3. Staying awake

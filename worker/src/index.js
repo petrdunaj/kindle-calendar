@@ -1,7 +1,10 @@
 import { buildDays } from './events.js';
+import { monitorUrl, parseMonitor } from './departures.js';
 
 const DAY_COUNT = 3;
 const CACHE_SECONDS = 300;
+const DEPARTURES_CACHE_SECONDS = 20;
+const DEFAULT_DIVAS = '60201425,60200763'; // St. Marx, St. Marx/Leberstraße
 const CALLBACK_RE = /^[A-Za-z_$][A-Za-z0-9_$]{0,63}$/;
 
 function js(body, status) {
@@ -36,17 +39,36 @@ async function fetchIcs(url, ctx) {
     return res.text();
 }
 
+async function departures(env, cb) {
+    try {
+        const divas = (env.DEPARTURE_DIVAS || DEFAULT_DIVAS).split(',').map((d) => d.trim());
+        const upstream = await fetch(monitorUrl(divas), {
+            cf: { cacheTtl: DEPARTURES_CACHE_SECONDS, cacheEverything: true },
+        });
+        if (!upstream.ok) throw new Error('HTTP ' + upstream.status);
+        const lines = parseMonitor(await upstream.json());
+        return js(cb + '(' + JSON.stringify({ generated: Date.now(), lines }) + ');');
+    } catch (e) {
+        return js('/* upstream error: ' + String(e.message).replace(/\*\//g, '') + ' */', 502);
+    }
+}
+
 export default {
     async fetch(request, env, ctx) {
         const url = new URL(request.url);
-        if (url.pathname !== '/events.js') return js('/* not found */', 404);
+        if (url.pathname !== '/events.js' && url.pathname !== '/departures.js') {
+            return js('/* not found */', 404);
+        }
 
         if (!env.ACCESS_TOKEN || !safeEqual(url.searchParams.get('token') || '', env.ACCESS_TOKEN)) {
             return js('/* forbidden */', 403);
         }
 
-        const cb = url.searchParams.get('cb') || 'renderEvents';
+        const isDepartures = url.pathname === '/departures.js';
+        const cb = url.searchParams.get('cb') || (isDepartures ? 'renderDepartures' : 'renderEvents');
         if (!CALLBACK_RE.test(cb)) return js('/* bad callback */', 400);
+
+        if (isDepartures) return departures(env, cb);
 
         const configured = [
             { label: env.GOOGLE_LABEL || 'G', url: env.GOOGLE_ICS_URL },
